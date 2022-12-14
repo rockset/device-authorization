@@ -19,7 +19,7 @@ This provider is fully functional.
 
 ### Okta
 
-This provider is blocked on Okta fixing an issue in their implementation, as it doesn't follow the RFC. 
+This provider is fully functional. 
 [Setup instructions](https://developer.okta.com/docs/guides/device-authorization-grant/main/).
 
 ### Google

@@ -6,7 +6,7 @@ import (
 	"golang.org/x/oauth2"
 )
 
-func NewOkta(org, clientID string) oauth2.Config {
+func NewAuth0(org, clientID string) oauth2.Config {
 	return oauth2.Config{
 		ClientID: clientID,
 		Endpoint: oauth2.Endpoint{
