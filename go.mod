@@ -3,7 +3,7 @@ module github.com/rockset/device-authorization
 go 1.19
 
 require (
-	github.com/stretchr/testify v1.8.1
+	github.com/stretchr/testify v1.8.4
 	golang.org/x/oauth2 v0.9.0
 )
 
