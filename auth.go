@@ -13,38 +13,33 @@ import (
 	"time"
 
 	"golang.org/x/oauth2"
-
-	"github.com/rockset/device-authorization/provider"
 )
 
 type Config struct {
 	OAuth2Config oauth2.Config
+	Audience     string
+	Issuer       string
+	URI          string
 	client       *http.Client
-}
-
-func NewConfig(providerName, org, clientID string) (*Config, error) {
-	fn, found := provider.Providers[providerName]
-	if !found {
-		return nil, provider.ErrNotFound
-	}
-
-	return &Config{
-		OAuth2Config: fn(org, clientID),
-		client:       http.DefaultClient,
-	}, nil
 }
 
 type Authorizer struct {
 	*Config
+	client *http.Client
 }
 
 func NewAuthorizer(config *Config) *Authorizer {
 	if config.client == nil {
 		config.client = http.DefaultClient
 	}
+	if config.Audience == "" {
+		// TODO what is a good default?
+		config.Audience = "something"
+	}
 
 	return &Authorizer{
 		config,
+		http.DefaultClient, // TODO don't!
 	}
 }
 
@@ -119,18 +114,20 @@ func (a *Authorizer) WaitForAuthorization(ctx context.Context, code Code) (oauth
 }
 
 func (a *Authorizer) Refresh(ctx context.Context) error {
-	return fmt.Errorf("not implemented")
+	return ErrNotImplemented
 }
 
 func (a *Authorizer) Revoke(ctx context.Context) error {
-	return fmt.Errorf("not implemented")
+	return ErrNotImplemented
 }
 
 const GrantType = "urn:ietf:params:oauth:grant-type:device_code"
 
 var (
 	// ErrAccessDenied is returned when the user denies the app access to their account.
-	ErrAccessDenied = errors.New("access denied by user")
+	ErrAccessDenied   = errors.New("access denied by user")
+	ErrAuthPending    = errors.New("authorization pending")
+	ErrNotImplemented = errors.New("not implemented")
 )
 
 type authorizationResponse struct {
@@ -160,8 +157,13 @@ func postForm[T any](ctx context.Context, client *http.Client, endpoint string, 
 	request.Header.Set("Accept", "application/json")
 	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	response, err := client.Do(request)
+	if err != nil {
+		return t, err
+	}
 
-	log.Printf("http status: %s", http.StatusText(response.StatusCode))
+	// TODO what to do if the response is 5xx? then the response body won't contain anything
+	//   Okta 400: {"error":"authorization_pending","error_description":"User has yet to authorize device code."}
+	//   Auth0 401: {"error":"authorization_pending","error_description":"The device authorization is pending. Please try again later."}
 
 	d := json.NewDecoder(response.Body)
 	if err = d.Decode(&t); err != nil {
@@ -172,10 +174,16 @@ func postForm[T any](ctx context.Context, client *http.Client, endpoint string, 
 }
 
 func codeRequestValues(cfg *Config) url.Values {
-	return url.Values{
+	values := url.Values{
 		"client_id": {cfg.OAuth2Config.ClientID},
 		"scope":     {strings.Join(cfg.OAuth2Config.Scopes, " ")},
 	}
+	if cfg.Audience != "" {
+		log.Printf("setting audience: %s", cfg.Audience)
+		values["audience"] = []string{cfg.Audience}
+	}
+
+	return values
 }
 
 func waitValues(cfg *Config, code string) url.Values {

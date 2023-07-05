@@ -9,7 +9,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/rockset/device-authorization"
-	"github.com/rockset/device-authorization/provider"
 )
 
 var integrationFlag = flag.Bool("integration", false, "only perform local tests")
@@ -23,10 +22,9 @@ func integration(t *testing.T) {
 func TestAuth0(t *testing.T) {
 	integration(t)
 	ctx := context.TODO()
-	cfg := device.Config{
-		OAuth2Config: provider.NewAuth0("rockset", os.Getenv("AUTH0_CLIENT_ID")),
-	}
-	a := device.NewAuthorizer(&cfg)
+	p := device.NewProvider("auth0")
+
+	a := device.NewAuthorizer(p.Config("rockset", os.Getenv("AUTH0_CLIENT_ID")))
 
 	code, err := a.RequestCode(ctx)
 	require.NoError(t, err)
@@ -43,10 +41,8 @@ func TestAuth0(t *testing.T) {
 func TestOkta(t *testing.T) {
 	integration(t)
 	ctx := context.TODO()
-	cfg := device.Config{
-		OAuth2Config: provider.NewOkta("rockset", os.Getenv("OKTA_CLIENT_ID")),
-	}
-	a := device.NewAuthorizer(&cfg)
+	p := device.NewProvider("okta")
+	a := device.NewAuthorizer(p.Config("rockset", os.Getenv("OKTA_CLIENT_ID")))
 
 	code, err := a.RequestCode(ctx)
 	require.NoError(t, err)

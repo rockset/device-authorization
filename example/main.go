@@ -15,10 +15,8 @@ import (
 func main() {
 	ctx := context.Background()
 
-	cfg, err := device.NewConfig("auth0", "rockset", os.Getenv("AUTH0_CLIENT_ID"))
-	if err != nil {
-		log.Fatalf("failed to create configuration: %v", err)
-	}
+	p := device.NewProvider("auth0")
+	cfg := p.Config("rockset", os.Getenv("AUTH0_CLIENT_ID"))
 
 	a := device.NewAuthorizer(cfg)
 

@@ -3,6 +3,7 @@ module github.com/rockset/device-authorization
 go 1.19
 
 require (
+	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/stretchr/testify v1.8.4
 	golang.org/x/oauth2 v0.9.0
 )
