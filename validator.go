@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"math/big"
 	"net/http"
 
@@ -34,10 +33,11 @@ type Validator struct {
 	Keys map[string]*rsa.PublicKey
 }
 
-func NewValidator(cfg *Config) Validator {
-	return Validator{Config: cfg}
+func NewValidator(cfg *Config) *Validator {
+	return &Validator{Config: cfg}
 }
 
+// Validate validates a token against public keys which must be loaded prior.
 func (v *Validator) Validate(tokenString string) error {
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		kid := token.Header["kid"].(string)
@@ -73,7 +73,8 @@ func (v *Validator) Validate(tokenString string) error {
 	return nil
 }
 
-func (v *Validator) Initialize() error {
+// LoadKeys loads public keys from the provider
+func (v *Validator) LoadKeys() error {
 	keys := make(map[string]*rsa.PublicKey)
 
 	resp, err := http.Get(v.URI)
@@ -106,12 +107,8 @@ func (v *Validator) Initialize() error {
 		}
 		pk.E = int(binary.LittleEndian.Uint64(number))
 
-		log.Printf("%s: %+v", key.Kid, pk)
 		keys[key.Kid] = &pk
 	}
-
-	// https://www.rfc-editor.org/rfc/rfc7518#page-30
-
 	v.Keys = keys
 
 	return nil

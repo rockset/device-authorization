@@ -3,7 +3,7 @@ package device
 var DefaultScopes = []string{"openid", "profile", "offline_access"}
 
 type Provider interface {
-	Config(string, string) *Config
+	Config(org, clientID string) *Config
 }
 
 func NewProvider(name string) Provider {

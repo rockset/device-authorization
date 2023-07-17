@@ -19,7 +19,7 @@ func (a Auth0) Config(org, clientID string) *Config {
 			Scopes: DefaultScopes,
 		},
 		Audience: fmt.Sprintf("https://%s.auth0.com", org),
-		Issuer:   fmt.Sprintf("https://%s.auth0.com", org),
+		Issuer:   fmt.Sprintf("https://%s.auth0.com/", org),
 		URI:      fmt.Sprintf("https://%s.auth0.com/.well-known/jwks.json", org),
 	}
 }
