@@ -19,7 +19,7 @@ func integration(t *testing.T) {
 	}
 }
 
-func TestAuth0(t *testing.T) {
+func TestAuth0Auth(t *testing.T) {
 	integration(t)
 	ctx := context.TODO()
 	p := device.NewProvider("auth0")
@@ -38,7 +38,7 @@ func TestAuth0(t *testing.T) {
 	t.Logf("token: %+v", token)
 }
 
-func TestOkta(t *testing.T) {
+func TestOktaAuth(t *testing.T) {
 	integration(t)
 	ctx := context.TODO()
 	p := device.NewProvider("okta")

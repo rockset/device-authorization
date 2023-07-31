@@ -1,6 +1,7 @@
 package device
 
 import (
+	"context"
 	"crypto/rsa"
 	"encoding/base64"
 	"encoding/binary"
@@ -12,6 +13,20 @@ import (
 
 	"github.com/golang-jwt/jwt"
 )
+
+type Validator interface {
+	Validate(ctx context.Context, tokenString string) error
+	Initialize(ctx context.Context) error
+}
+
+type OnlineValidator struct {
+	*Config
+}
+
+type OfflineValidator struct {
+	*Config
+	Keys map[string]*rsa.PublicKey
+}
 
 type Key struct {
 	Alg string   `json:"alg"`
@@ -28,17 +43,12 @@ type keyResponse struct {
 	Keys []Key `json:"keys"`
 }
 
-type Validator struct {
-	*Config
-	Keys map[string]*rsa.PublicKey
-}
-
-func NewValidator(cfg *Config) *Validator {
-	return &Validator{Config: cfg}
+func NewOfflineValidator(cfg *Config) Validator {
+	return &OfflineValidator{Config: cfg}
 }
 
 // Validate validates a token against public keys which must be loaded prior.
-func (v *Validator) Validate(tokenString string) error {
+func (v *OfflineValidator) Validate(_ context.Context, tokenString string) error {
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		kid := token.Header["kid"].(string)
 		if key, found := v.Keys[kid]; found {
@@ -73,11 +83,16 @@ func (v *Validator) Validate(tokenString string) error {
 	return nil
 }
 
-// LoadKeys loads public keys from the provider
-func (v *Validator) LoadKeys() error {
+// Initialize loads public keys from the provider
+func (v *OfflineValidator) Initialize(ctx context.Context) error {
 	keys := make(map[string]*rsa.PublicKey)
 
-	resp, err := http.Get(v.URI)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, v.KeyURI, nil)
+	if err != nil {
+		return err
+	}
+
+	resp, err := v.client.Do(req)
 	if err != nil {
 		return err
 	}

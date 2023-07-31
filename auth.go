@@ -19,7 +19,8 @@ type Config struct {
 	OAuth2Config oauth2.Config
 	Audience     string
 	Issuer       string
-	URI          string
+	KeyURI       string
+	org          string
 	client       *http.Client
 }
 
