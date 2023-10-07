@@ -83,31 +83,31 @@ func (a *Authorizer) RequestCode(ctx context.Context) (Code, error) {
 	return code, nil
 }
 
-func (a *Authorizer) WaitForAuthorization(ctx context.Context, code Code) (oauth2.Token, error) {
+func (a *Authorizer) WaitForAuthorization(ctx context.Context, code Code) (AuthorizationResponse, error) {
 	for {
-		token, err := postForm[authorizationResponse](ctx,
+		token, err := postForm[AuthorizationResponse](ctx,
 			a.client, a.OAuth2Config.Endpoint.TokenURL, waitValues(a.Config, code.DeviceCode))
 		if err != nil {
-			return token.Token, err
+			return token, err
 		}
 
 		switch token.Error {
 		case "":
 			// if error is empty, we got a token
-			return token.Token, nil
+			return token, nil
 		case "authorization_pending":
 			// do nothing, just wait
 		case "slow_down":
 			code.Interval *= 2
 		case "access_denied":
-			return token.Token, ErrAccessDenied
+			return token, ErrAccessDenied
 		default:
-			return token.Token, fmt.Errorf("authorization failed: %v", token.Error)
+			return token, fmt.Errorf("authorization failed: %v", token.Error)
 		}
 
 		select {
 		case <-ctx.Done():
-			return token.Token, ctx.Err()
+			return token, ctx.Err()
 		case <-time.After(time.Duration(code.Interval) * time.Second):
 			// next loop iteration
 		}
@@ -131,8 +131,12 @@ var (
 	ErrNotImplemented = errors.New("not implemented")
 )
 
-type authorizationResponse struct {
-	oauth2.Token
+type AuthorizationResponse struct {
+	AccessToken      string `json:"access_token"`
+	IDToken          string `json:"id_token"`
+	Scope            string `json:"scope"`
+	TokenType        string `json:"token_type"`
+	ExpiresIn        int    `json:"expires_in"`
 	Error            string `json:"error"`
 	ErrorDescription string `json:"error_description"`
 }
